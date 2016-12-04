@@ -1,0 +1,6 @@
+Debug
+Release
+bin
+*.opendb
+*.db
+*.suo
