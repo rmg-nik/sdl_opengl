@@ -1,10 +1,15 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
-#include <GL\glew.h>
-#include <glm\glm.hpp>
+
+#include <GL/glew.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <SDL.h>
 #include <SDL_image.h>
+
 #include "GLProgram.hpp"
 
 using namespace std;
@@ -13,8 +18,8 @@ using namespace std;
 #undef main
 #endif
 
-const int WINDOW_W = 512;
-const int WINDOW_H = 512;
+const int WINDOW_W = 800;
+const int WINDOW_H = 600;
 const int FPS = 50;
 
 struct Texture2D
@@ -33,7 +38,8 @@ struct TutorialData_t
 	GLuint VAO;
 	GLuint VBO;
 	GLuint EBO;
-    Texture2D texture2D;
+    Texture2D texture2D_1;
+    Texture2D texture2D_2;    
 };
 
 void SDLDie(const std::string& msg)
@@ -91,9 +97,6 @@ Texture2D LoadTexture(const std::string& filename)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
     glGenerateMipmap(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -160,10 +163,10 @@ void SetupGL(TutorialData_t* data)
 	{
 		GLfloat vertices[] = {
             // Positions          // Colors           // Texture Coords
-            0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // Top Right
-            0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // Bottom Right
-            -0.8f, -0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // Bottom Left
-            -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // Top Left 
+            0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // Top Right
+            0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // Bottom Right
+            -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // Bottom Left
+            -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // Top Left 
 		};
 
 		GLuint indices[] = {  // Note that we start from 0!
@@ -179,15 +182,18 @@ void SetupGL(TutorialData_t* data)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data->EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-		GLint vertexPosition = glGetAttribLocation(data->shaderProgram.GetProgram(), "position");
+		//GLint vertexPosition = glGetAttribLocation(data->shaderProgram.GetProgram(), "position");
+        const GLint vertexPosition = 0;
 		glVertexAttribPointer(vertexPosition, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 		glEnableVertexAttribArray(vertexPosition);
 
-		GLint vertexColor = glGetAttribLocation(data->shaderProgram.GetProgram(), "color");
+		//GLint vertexColor = glGetAttribLocation(data->shaderProgram.GetProgram(), "color");
+        const GLint vertexColor = 1;
 		glVertexAttribPointer(vertexColor, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 		glEnableVertexAttribArray(vertexColor);
 
-        GLint texCoord = glGetAttribLocation(data->shaderProgram.GetProgram(), "texCoord");
+        //GLint texCoord = glGetAttribLocation(data->shaderProgram.GetProgram(), "texCoord");
+        const GLint texCoord = 2;
         glVertexAttribPointer(texCoord, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
         glEnableVertexAttribArray(texCoord);
 
@@ -202,6 +208,17 @@ void SetupGL(TutorialData_t* data)
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
+void ApplyTransform(TutorialData_t* data, glm::vec3 translate_vec)
+{
+    glm::mat4 trans;
+    trans = glm::rotate(trans, (GLfloat)SDL_GetTicks() / 1000.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+    trans = glm::translate(trans, translate_vec);
+    trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 1.0f));
+    GLuint transformLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "transform");
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
+}
+
 void DrawScene(TutorialData_t* data)
 {
     for (auto window: data->mainwindow)
@@ -211,13 +228,29 @@ void DrawScene(TutorialData_t* data)
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        data->shaderProgram.Use();
+        data->shaderProgram.Use();        
 
-        glBindTexture(GL_TEXTURE_2D, data->texture2D.textureID);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, data->texture2D_1.textureID);
+        glUniform1i(glGetUniformLocation(data->shaderProgram.GetProgram(), "ourTexture1"), 0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, data->texture2D_2.textureID);
+        glUniform1i(glGetUniformLocation(data->shaderProgram.GetProgram(), "ourTexture2"), 1);
+
         glBindVertexArray(data->VAO);
+
+        ApplyTransform(data, glm::vec3(0.5f, -0.5f, 0.0f));
+
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        ApplyTransform(data, glm::vec3(-0.5f, 0.5f, 0.0f));
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
+
         glFlush();
         SDL_GL_SwapWindow(window);
         CheckSDLError();
@@ -245,37 +278,58 @@ bool Idle(TutorialData_t* data)
         if (has_changes)
             DrawScene(data);
 
-        has_changes = false;
+        //has_changes = false;
 
-        if (!SDL_WaitEventTimeout(&event, 20))
+        if (!SDL_WaitEventTimeout(&event, 1))
             continue;
 
         switch (event.type)
         {
         case SDL_QUIT:
             return false;
+            //TODO: process keys and mouse in separate methods
+        case SDL_KEYDOWN:
+            {
+                if (event.key.keysym.sym == SDLK_ESCAPE)
+                    return false;
+            }
         default:
             has_changes = true;
         }
+        SDL_Delay(20);
     }
 
     return true;
 }
 
+void main_function(int argc, char* argv[])
+{
+    TutorialData_t data;
+
+    SetupWindow(&data);
+    SetupGL(&data);
+    data.texture2D_1 = LoadTexture("container.jpg");
+    data.texture2D_2 = LoadTexture("awesomeface.png");
+
+    while (Idle(&data));
+
+    DestroyWindow(&data);
+
+    return;
+}
+
+void test_function(int argc, char* argv[])
+{
+
+    return;
+}
 
 int main(int argc, char *argv[])
 {
     cout << "START" << endl;
 
-    TutorialData_t data;
-
-    SetupWindow(&data);
-	SetupGL(&data);
-    data.texture2D = LoadTexture("container.jpg");
-
-    while (Idle(&data));
-
-    DestroyWindow(&data);
+    main_function(argc, argv);
+    //test_function(argc, argv);
 
     cout << endl << "END" << endl;
     system("pause");
