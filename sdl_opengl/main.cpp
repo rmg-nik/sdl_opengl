@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
+#include <vector>
+#include <iterator>
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
@@ -21,6 +23,12 @@ using namespace std;
 const int WINDOW_W = 800;
 const int WINDOW_H = 600;
 const int FPS = 50;
+
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -3.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+bool KEY_PRESSED_STATUS[1024];
 
 struct Texture2D
 {
@@ -148,6 +156,7 @@ void SetupWindow(TutorialData_t* data )
     }
 
     SDL_GL_SetSwapInterval(1);    
+    
 }
 
 void SetupGL(TutorialData_t* data)
@@ -249,10 +258,10 @@ void ApplyTransform(TutorialData_t* data, glm::vec3 translate_vec)
 {
     glm::mat4 model;    
     model = glm::translate(model, translate_vec);
-    model = glm::rotate(model, (GLfloat)SDL_GetTicks() / 1000.0f, glm::vec3(0.5f, 1.0f, 0.0f));
-
+    model = glm::rotate(model, (GLfloat)(translate_vec.x), glm::vec3(0.5f, 1.0f, 0.0f));
+    
     glm::mat4 view;
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+    view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), (GLfloat)WINDOW_W / WINDOW_H, 0.1f, 100.0f);
@@ -327,35 +336,92 @@ void DestroyWindow(TutorialData_t* data)
     SDL_Quit();
 }
 
+void DoMovement()
+{
+    static auto last_tick = SDL_GetTicks();
+    auto current_tick = SDL_GetTicks();
+    GLfloat cameraSpeed = 0.001f * (current_tick - last_tick);
+    last_tick = current_tick;
+    if (KEY_PRESSED_STATUS[SDLK_w])
+    {
+        cameraPos += cameraSpeed * glm::normalize(cameraFront);
+    }
+    if (KEY_PRESSED_STATUS[SDLK_s])
+    {
+        cameraPos -= cameraSpeed * glm::normalize(cameraFront);
+    }
+    if (KEY_PRESSED_STATUS[SDLK_a])
+    {
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if (KEY_PRESSED_STATUS[SDLK_d])
+    {
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+}
+
+void HandleKeyboard(const SDL_Event& event)
+{    
+    if (event.type == SDL_KEYDOWN)
+    {
+        KEY_PRESSED_STATUS[event.key.keysym.sym] = true;
+    }
+    else if (event.type == SDL_KEYUP)
+    {
+        KEY_PRESSED_STATUS[event.key.keysym.sym] = false;
+    }
+}
+
+void HandleMouse(const SDL_Event& event)
+{
+
+}
+
 bool Idle(TutorialData_t* data)
 {
     SDL_Event event;
+    const int MAX_EVENTS = 100;
+    SDL_Event events_array[MAX_EVENTS + 1];
+
     bool has_changes = true;
 
     while (true)
     {
+        DoMovement();
         if (has_changes)
+        {
             DrawScene(data);
+        }
 
         //has_changes = false;
 
-        if (!SDL_WaitEventTimeout(&event, 1))
+        if (!SDL_WaitEventTimeout(&event, 10))
             continue;
 
-        switch (event.type)
+        int count = 0;
+        events_array[0] = event;
+        count = SDL_PeepEvents(events_array + 1, MAX_EVENTS, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+
+        for (int i = 0; i < count + 1; ++i)
         {
-        case SDL_QUIT:
-            return false;
-            //TODO: process keys and mouse in separate methods
-        case SDL_KEYDOWN:
+            auto& ev = events_array[i];
+            switch (ev.type)
             {
-                if (event.key.keysym.sym == SDLK_ESCAPE)
-                    return false;
+            case SDL_QUIT:
+                return false;
+                //TODO: process keys and mouse in separate methods
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                {
+                    if (ev.key.keysym.sym == SDLK_ESCAPE)
+                        return false;
+                }
+                HandleKeyboard(ev);
+                break;
+            default:
+                break;
             }
-        default:
-            has_changes = true;
-        }
-        SDL_Delay(20);
+        }        
     }
 
     return true;
