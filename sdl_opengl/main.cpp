@@ -161,13 +161,49 @@ void SetupGL(TutorialData_t* data)
 
 	glBindVertexArray(data->VAO);
 	{
-		GLfloat vertices[] = {
-            // Positions          // Colors           // Texture Coords
-            0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // Top Right
-            0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // Bottom Right
-            -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // Bottom Left
-            -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // Top Left 
-		};
+        GLfloat vertices[] = {
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+        };
 
 		GLuint indices[] = {  // Note that we start from 0!
 			0, 1, 3, 
@@ -184,24 +220,25 @@ void SetupGL(TutorialData_t* data)
 
 		//GLint vertexPosition = glGetAttribLocation(data->shaderProgram.GetProgram(), "position");
         const GLint vertexPosition = 0;
-		glVertexAttribPointer(vertexPosition, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+		glVertexAttribPointer(vertexPosition, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
 		glEnableVertexAttribArray(vertexPosition);
 
-		//GLint vertexColor = glGetAttribLocation(data->shaderProgram.GetProgram(), "color");
-        const GLint vertexColor = 1;
-		glVertexAttribPointer(vertexColor, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(vertexColor);
-
         //GLint texCoord = glGetAttribLocation(data->shaderProgram.GetProgram(), "texCoord");
-        const GLint texCoord = 2;
-        glVertexAttribPointer(texCoord, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+        const GLint texCoord = 1;
+        glVertexAttribPointer(texCoord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
         glEnableVertexAttribArray(texCoord);
+
+        //GLint vertexColor = glGetAttribLocation(data->shaderProgram.GetProgram(), "color");
+//      const GLint vertexColor = 2;
+// 		glVertexAttribPointer(vertexColor, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+// 		glEnableVertexAttribArray(vertexColor);
 
 	}
 	glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -210,12 +247,23 @@ void SetupGL(TutorialData_t* data)
 
 void ApplyTransform(TutorialData_t* data, glm::vec3 translate_vec)
 {
-    glm::mat4 trans;
-    trans = glm::rotate(trans, (GLfloat)SDL_GetTicks() / 1000.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-    trans = glm::translate(trans, translate_vec);
-    trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 1.0f));
-    GLuint transformLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "transform");
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+    glm::mat4 model;    
+    model = glm::translate(model, translate_vec);
+    model = glm::rotate(model, (GLfloat)SDL_GetTicks() / 1000.0f, glm::vec3(0.5f, 1.0f, 0.0f));
+
+    glm::mat4 view;
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+
+    glm::mat4 projection;
+    projection = glm::perspective(glm::radians(45.0f), (GLfloat)WINDOW_W / WINDOW_H, 0.1f, 100.0f);
+
+    GLuint modelLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "model");
+    GLuint viewLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "view");
+    GLuint projectionLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "projection");
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
 }
 
@@ -226,7 +274,7 @@ void DrawScene(TutorialData_t* data)
         SDL_GL_MakeCurrent(window, data->maincontext);
         //glViewport(0, 0, 1920, 1080);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         data->shaderProgram.Use();        
 
@@ -240,13 +288,24 @@ void DrawScene(TutorialData_t* data)
 
         glBindVertexArray(data->VAO);
 
-        ApplyTransform(data, glm::vec3(0.5f, -0.5f, 0.0f));
+        glm::vec3 cubePositions[] = {
+            glm::vec3(0.0f,  0.0f,  0.0f),
+            glm::vec3(2.0f,  5.0f, -15.0f),
+            glm::vec3(-1.5f, -2.2f, -2.5f),
+            glm::vec3(-3.8f, -2.0f, -12.3f),
+            glm::vec3(2.4f, -0.4f, -3.5f),
+            glm::vec3(-1.7f,  3.0f, -7.5f),
+            glm::vec3(1.3f, -2.0f, -2.5f),
+            glm::vec3(1.5f,  2.0f, -2.5f),
+            glm::vec3(1.5f,  0.2f, -1.5f),
+            glm::vec3(-1.3f,  1.0f, -1.5f)
+        };
+        for (auto&x : cubePositions)
+        {
+            ApplyTransform(data, x);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        ApplyTransform(data, glm::vec3(-0.5f, 0.5f, 0.0f));
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
