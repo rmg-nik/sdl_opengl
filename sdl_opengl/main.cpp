@@ -13,6 +13,7 @@
 #include <SDL_image.h>
 
 #include "GLProgram.hpp"
+#include "Camera.hpp"
 
 using namespace std;
 
@@ -23,11 +24,6 @@ using namespace std;
 const int WINDOW_W = 800;
 const int WINDOW_H = 600;
 const int FPS = 50;
-
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-GLfloat FOV = 45.0f;
 
 bool KEY_PRESSED_STATUS[1024];
 
@@ -49,6 +45,7 @@ struct TutorialData_t
 	GLuint EBO;
     Texture2D texture2D_1;
     Texture2D texture2D_2;    
+    Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 };
 
 void SDLDie(const std::string& msg)
@@ -266,10 +263,10 @@ void ApplyTransform(TutorialData_t* data, glm::vec3 translate_vec)
     model = glm::rotate(model, (GLfloat)(translate_vec.x), glm::vec3(0.5f, 1.0f, 0.0f));
     
     glm::mat4 view;
-    view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    view = data->camera.GetViewMatrix();
 
     glm::mat4 projection;
-    projection = glm::perspective(glm::radians(FOV), (GLfloat)WINDOW_W / WINDOW_H, 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(data->camera.GetZoom()), (GLfloat)WINDOW_W / WINDOW_H, 0.1f, 100.0f);
 
     GLuint modelLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "model");
     GLuint viewLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "view");
@@ -341,31 +338,32 @@ void DestroyWindow(TutorialData_t* data)
     SDL_Quit();
 }
 
-void DoMovement()
+void DoMovement(TutorialData_t* data)
 {
     static auto last_tick = SDL_GetTicks();
     auto current_tick = SDL_GetTicks();
-    GLfloat cameraSpeed = 0.001f * (current_tick - last_tick);
-    last_tick = current_tick;
+    GLfloat deltaTime = GLfloat(current_tick - last_tick) / 1000.0f;
+    
     if (KEY_PRESSED_STATUS[SDLK_w])
     {
-        cameraPos += cameraSpeed * glm::normalize(cameraFront);
+        data->camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
     }
     if (KEY_PRESSED_STATUS[SDLK_s])
     {
-        cameraPos -= cameraSpeed * glm::normalize(cameraFront);
+        data->camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
     }
     if (KEY_PRESSED_STATUS[SDLK_a])
     {
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        data->camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
     }
     if (KEY_PRESSED_STATUS[SDLK_d])
     {
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        data->camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
     }
+    last_tick = current_tick;
 }
 
-void HandleKeyboard(const SDL_Event& event)
+void HandleKeyboard(const SDL_Event& event, TutorialData_t* )
 {    
     if (event.type == SDL_KEYDOWN)
     {
@@ -377,7 +375,7 @@ void HandleKeyboard(const SDL_Event& event)
     }
 }
 
-void HandleMouse(const SDL_Event& event)
+void HandleMouse(const SDL_Event& event, TutorialData_t* data)
 {
     if (event.type == SDL_MOUSEBUTTONDOWN)
     {
@@ -389,8 +387,6 @@ void HandleMouse(const SDL_Event& event)
     }
     else if (event.type == SDL_MOUSEMOTION)
     {        
-        static GLfloat pitch = 0.0f;
-        static GLfloat yaw = -90.0f;
         static GLfloat lastX, lastY;
         static bool firstMouse = true;
 
@@ -407,32 +403,11 @@ void HandleMouse(const SDL_Event& event)
         GLfloat yoffset = lastY - ypos;
         lastX = xpos;
         lastY = ypos;
-
-        GLfloat sensitivity = 0.05f;
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-
-        yaw += xoffset;
-        pitch += yoffset;
-
-        if (pitch > 89.0f)
-            pitch = 89.0f;
-        if (pitch < -89.0f)
-            pitch = -89.0f;
-
-        glm::vec3 front;
-        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-        front.y = sin(glm::radians(pitch));
-        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-        cameraFront = glm::normalize(front);
+        data->camera.ProcessMouseMovement(xoffset, yoffset);
     }
     else if (event.type == SDL_MOUSEWHEEL)
     {
-        FOV -= 1.5f * (GLfloat)event.wheel.y;
-        if (FOV <= 1.0f)
-            FOV = 1.0f;
-        if (FOV >= 90.0f)
-            FOV = 90.0f;
+        data->camera.ProcessMouseScroll((GLfloat)event.wheel.y);
     }
 
 }
@@ -447,7 +422,7 @@ bool Idle(TutorialData_t* data)
 
     while (true)
     {
-        DoMovement();
+        DoMovement(data);
         if (has_changes)
         {
             DrawScene(data);
@@ -476,13 +451,13 @@ bool Idle(TutorialData_t* data)
                     if (ev.key.keysym.sym == SDLK_ESCAPE)
                         return false;
                 }
-                HandleKeyboard(ev);
+                HandleKeyboard(ev, data);
                 break;
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
             case SDL_MOUSEMOTION:
             case SDL_MOUSEWHEEL:
-                HandleMouse(ev);
+                HandleMouse(ev, data);
                 break;
             default:
                 break;
