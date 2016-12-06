@@ -25,8 +25,9 @@ const int WINDOW_H = 600;
 const int FPS = 50;
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+GLfloat FOV = 45.0f;
 
 bool KEY_PRESSED_STATUS[1024];
 
@@ -140,7 +141,8 @@ void SetupWindow(TutorialData_t* data )
         window = SDL_CreateWindow("RMG FIRST OGL", 
             window_bounds.x + window_bounds.w / 2 - WINDOW_W / 2,
             window_bounds.y + window_bounds.h / 2 - WINDOW_H / 2,
-            WINDOW_W, WINDOW_H, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+            WINDOW_W, WINDOW_H, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
+        );
         if (!window)
             SDLDie("Unable to create window");
         index++;
@@ -154,7 +156,10 @@ void SetupWindow(TutorialData_t* data )
     {
         SDLDie((char*)glewGetErrorString(err));
     }
-
+    //SDL_CaptureMouse(SDL_TRUE);
+    //SDL_SetRelativeMouseMode(SDL_TRUE);
+    SDL_ShowCursor(0);
+    SDL_WarpMouseInWindow(data->mainwindow[0], WINDOW_W / 2, WINDOW_H / 2);
     SDL_GL_SetSwapInterval(1);    
     
 }
@@ -264,7 +269,7 @@ void ApplyTransform(TutorialData_t* data, glm::vec3 translate_vec)
     view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
     glm::mat4 projection;
-    projection = glm::perspective(glm::radians(45.0f), (GLfloat)WINDOW_W / WINDOW_H, 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(FOV), (GLfloat)WINDOW_W / WINDOW_H, 0.1f, 100.0f);
 
     GLuint modelLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "model");
     GLuint viewLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "view");
@@ -374,6 +379,61 @@ void HandleKeyboard(const SDL_Event& event)
 
 void HandleMouse(const SDL_Event& event)
 {
+    if (event.type == SDL_MOUSEBUTTONDOWN)
+    {
+
+    }
+    else if (event.type == SDL_MOUSEBUTTONUP)
+    {
+
+    }
+    else if (event.type == SDL_MOUSEMOTION)
+    {        
+        static GLfloat pitch = 0.0f;
+        static GLfloat yaw = -90.0f;
+        static GLfloat lastX, lastY;
+        static bool firstMouse = true;
+
+        GLfloat xpos = (GLfloat)event.motion.x;
+        GLfloat ypos = (GLfloat)event.motion.y;
+        if (firstMouse)
+        {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
+
+        GLfloat xoffset = xpos - lastX;
+        GLfloat yoffset = lastY - ypos;
+        lastX = xpos;
+        lastY = ypos;
+
+        GLfloat sensitivity = 0.05f;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
+
+        yaw += xoffset;
+        pitch += yoffset;
+
+        if (pitch > 89.0f)
+            pitch = 89.0f;
+        if (pitch < -89.0f)
+            pitch = -89.0f;
+
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraFront = glm::normalize(front);
+    }
+    else if (event.type == SDL_MOUSEWHEEL)
+    {
+        FOV -= 1.5f * (GLfloat)event.wheel.y;
+        if (FOV <= 1.0f)
+            FOV = 1.0f;
+        if (FOV >= 90.0f)
+            FOV = 90.0f;
+    }
 
 }
 
@@ -417,6 +477,12 @@ bool Idle(TutorialData_t* data)
                         return false;
                 }
                 HandleKeyboard(ev);
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+            case SDL_MOUSEMOTION:
+            case SDL_MOUSEWHEEL:
+                HandleMouse(ev);
                 break;
             default:
                 break;
