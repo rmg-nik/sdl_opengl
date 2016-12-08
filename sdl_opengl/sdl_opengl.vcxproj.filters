@@ -43,5 +43,14 @@
     <None Include="res\fragment_shader_2.frag">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="res\vertex_shade_lighting.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\fragment_shader_lighting_lamp.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\fragment_shader_lighting.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

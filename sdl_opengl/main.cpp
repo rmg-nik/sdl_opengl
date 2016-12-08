@@ -27,6 +27,8 @@ const int FPS = 50;
 
 bool KEY_PRESSED_STATUS[1024];
 
+const glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
 struct Texture2D
 {
     int w{ -1 };
@@ -39,12 +41,12 @@ struct TutorialData_t
     SDL_Window* mainwindow[1];
     SDL_Rect window_bounds;
     SDL_GLContext maincontext;    
-	GLProgram shaderProgram;
-	GLuint VAO;
+    GLProgram shaderProgram;
+    GLProgram lightShaderProgram;
+    GLuint VAO;
+    GLuint lightVAO;
 	GLuint VBO;
-	GLuint EBO;
-    Texture2D texture2D_1;
-    Texture2D texture2D_2;    
+    
     Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 };
 
@@ -163,119 +165,87 @@ void SetupWindow(TutorialData_t* data )
 
 void SetupGL(TutorialData_t* data)
 {
-    data->shaderProgram.InitWithFiles("vertex_shader.vs", "fragment_shader.frag");
+    data->shaderProgram.InitWithFiles("vertex_shade_lighting.vs", "fragment_shader_lighting.frag");
+    if (!data->shaderProgram.IsInitialized())
+        return SDLDie(data->shaderProgram.GetError());
+
+    data->lightShaderProgram.InitWithFiles("vertex_shade_lighting.vs", "fragment_shader_lighting_lamp.frag");
     if (!data->shaderProgram.IsInitialized())
         return SDLDie(data->shaderProgram.GetError());
     
+    GLfloat vertices[] = {
+        -0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f, -0.5f,
+        0.5f,  0.5f, -0.5f,
+        0.5f,  0.5f, -0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+
+        -0.5f, -0.5f,  0.5f,
+        0.5f, -0.5f,  0.5f,
+        0.5f,  0.5f,  0.5f,
+        0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,
+
+        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+
+        0.5f,  0.5f,  0.5f,
+        0.5f,  0.5f, -0.5f,
+        0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f,  0.5f,
+        0.5f,  0.5f,  0.5f,
+
+        -0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f,  0.5f,
+        0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f, -0.5f,
+
+        -0.5f,  0.5f, -0.5f,
+        0.5f,  0.5f, -0.5f,
+        0.5f,  0.5f,  0.5f,
+        0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f
+    };
 
 	glGenVertexArrays(1, &data->VAO);
-
 	glBindVertexArray(data->VAO);
-	{
-        GLfloat vertices[] = {
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-        };
-
-		GLuint indices[] = {  // Note that we start from 0!
-			0, 1, 3, 
-            1, 2, 3
-		};
-
+	{        
 		glGenBuffers(1, &data->VBO);
 		glBindBuffer(GL_ARRAY_BUFFER, data->VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-		glGenBuffers(1, &data->EBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data->EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-		//GLint vertexPosition = glGetAttribLocation(data->shaderProgram.GetProgram(), "position");
+		
         const GLint vertexPosition = 0;
-		glVertexAttribPointer(vertexPosition, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-		glEnableVertexAttribArray(vertexPosition);
-
-        //GLint texCoord = glGetAttribLocation(data->shaderProgram.GetProgram(), "texCoord");
-        const GLint texCoord = 1;
-        glVertexAttribPointer(texCoord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-        glEnableVertexAttribArray(texCoord);
-
-        //GLint vertexColor = glGetAttribLocation(data->shaderProgram.GetProgram(), "color");
-//      const GLint vertexColor = 2;
-// 		glVertexAttribPointer(vertexColor, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-// 		glEnableVertexAttribArray(vertexColor);
-
+		glVertexAttribPointer(vertexPosition, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(vertexPosition);      
 	}
 	glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glGenVertexArrays(1, &data->lightVAO);
+    glBindVertexArray(data->lightVAO);
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, data->VBO);
+
+        const GLint vertexPosition = 0;
+        glVertexAttribPointer(vertexPosition, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(vertexPosition);
+    }
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-}
-
-void ApplyTransform(TutorialData_t* data, glm::vec3 translate_vec)
-{
-    glm::mat4 model;    
-    model = glm::translate(model, translate_vec);
-    model = glm::rotate(model, (GLfloat)(translate_vec.x), glm::vec3(0.5f, 1.0f, 0.0f));
-    
-    glm::mat4 view;
-    view = data->camera.GetViewMatrix();
-
-    glm::mat4 projection;
-    projection = glm::perspective(glm::radians(data->camera.GetZoom()), (GLfloat)WINDOW_W / WINDOW_H, 0.1f, 100.0f);
-
-    GLuint modelLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "model");
-    GLuint viewLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "view");
-    GLuint projectionLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "projection");
-
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
 }
 
 void DrawScene(TutorialData_t* data)
@@ -287,39 +257,52 @@ void DrawScene(TutorialData_t* data)
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        data->shaderProgram.Use();        
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, data->texture2D_1.textureID);
-        glUniform1i(glGetUniformLocation(data->shaderProgram.GetProgram(), "ourTexture1"), 0);
+        // Use cooresponding shader when setting uniforms/drawing objects
+        data->shaderProgram.Use();
+        GLint objectColorLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "objectColor");
+        GLint lightColorLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "lightColor");
+        glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
+        glUniform3f(lightColorLoc, 1.0f, 0.5f, 1.0f);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, data->texture2D_2.textureID);
-        glUniform1i(glGetUniformLocation(data->shaderProgram.GetProgram(), "ourTexture2"), 1);
+        // Create camera transformations
+        glm::mat4 view;
+        view = data->camera.GetViewMatrix();
+        glm::mat4 projection = glm::perspective(data->camera.GetZoom(), (GLfloat)WINDOW_W / (GLfloat)WINDOW_H, 0.1f, 100.0f);
+        // Get the uniform locations
+        GLint modelLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "model");
+        GLint viewLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "view");
+        GLint projLoc = glGetUniformLocation(data->shaderProgram.GetProgram(), "projection");
+        // Pass the matrices to the shader
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+        // Draw the container (using container's vertex attributes)
         glBindVertexArray(data->VAO);
-
-        glm::vec3 cubePositions[] = {
-            glm::vec3(0.0f,  0.0f,  0.0f),
-            glm::vec3(2.0f,  5.0f, -15.0f),
-            glm::vec3(-1.5f, -2.2f, -2.5f),
-            glm::vec3(-3.8f, -2.0f, -12.3f),
-            glm::vec3(2.4f, -0.4f, -3.5f),
-            glm::vec3(-1.7f,  3.0f, -7.5f),
-            glm::vec3(1.3f, -2.0f, -2.5f),
-            glm::vec3(1.5f,  2.0f, -2.5f),
-            glm::vec3(1.5f,  0.2f, -1.5f),
-            glm::vec3(-1.3f,  1.0f, -1.5f)
-        };
-        for (auto&x : cubePositions)
-        {
-            ApplyTransform(data, x);
-
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
-
+        glm::mat4 model;
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Also draw the lamp object, again binding the appropriate shader
+        data->lightShaderProgram.Use();
+        // Get location objects for the matrices on the lamp shader (these could be different on a different shader)
+        modelLoc = glGetUniformLocation(data->lightShaderProgram.GetProgram(), "model");
+        viewLoc = glGetUniformLocation(data->lightShaderProgram.GetProgram(), "view");
+        projLoc = glGetUniformLocation(data->lightShaderProgram.GetProgram(), "projection");
+        // Set matrices
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        model = glm::mat4();
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        // Draw the light object (using light's vertex attributes)
+        glBindVertexArray(data->lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
 
         glFlush();
         SDL_GL_SwapWindow(window);
@@ -331,7 +314,6 @@ void DestroyWindow(TutorialData_t* data)
 {
 	glDeleteVertexArrays(1, &data->VAO);
 	glDeleteBuffers(1, &data->VBO);
-	glDeleteBuffers(1, &data->EBO);
     SDL_GL_DeleteContext(data->maincontext);
     for (auto w: data->mainwindow)
         SDL_DestroyWindow(w);
@@ -474,8 +456,6 @@ void main_function(int argc, char* argv[])
 
     SetupWindow(&data);
     SetupGL(&data);
-    data.texture2D_1 = LoadTexture("container.jpg");
-    data.texture2D_2 = LoadTexture("awesomeface.png");
 
     while (Idle(&data));
 

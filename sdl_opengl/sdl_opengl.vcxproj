@@ -154,7 +154,10 @@
     <None Include="res\fragment_shader.frag" />
     <None Include="res\fragment_shader_1.frag" />
     <None Include="res\fragment_shader_2.frag" />
+    <None Include="res\fragment_shader_lighting_lamp.frag" />
+    <None Include="res\fragment_shader_lighting.frag" />
     <None Include="res\vertex_shader.vs" />
+    <None Include="res\vertex_shade_lighting.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
